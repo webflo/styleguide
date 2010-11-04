@@ -19,37 +19,32 @@ function styleguide_styleguide() {
   );
   $items['ul'] = array(
     'title' => t('Unordered list'),
-    'theme' => 'item_list',
-    'variables' => array('items' => styleguide_list(), 'type' => 'ul'),
+    'content' => theme('item_list', styleguide_list()),
     'group' => t('Lists'),
   );
   $items['ol'] = array(
     'title' => t('Ordered list'),
-    'theme' => 'item_list',
-    'variables' => array('items' => styleguide_list(), 'type' => 'ol'),
+    'content' => theme('item_list', styleguide_list(), NULL, 'ol'),
     'group' => t('Lists'),
   );
   $items['ul_title'] = array(
     'title' => t('Unordered list, with title'),
-    'theme' => 'item_list',
-    'variables' => array('items' => styleguide_list(), 'type' => 'ul', 'title' => ucwords(styleguide_word())),
+    'content' => theme('item_list', styleguide_list(), ucwords(styleguide_word())),
     'group' => t('Lists'),
   );
   $items['ol_title'] = array(
     'title' => t('Ordered list, with title'),
-    'theme' => 'item_list',
-    'variables' => array('items' => styleguide_list(), 'type' => 'ol', 'title' => ucwords(styleguide_word())),
+    'content' => theme('item_list', styleguide_list(), ucwords(styleguide_word()), 'ol'),
     'group' => t('Lists'),
   );
   $items['menu_tree'] = array(
     'title' => t('Menu tree'),
-    'content' => menu_tree('management'),
+    'content' => menu_tree('navigation'),
     'group' => t('Menus'),
   );
   $items['table'] = array(
     'title' => t('Table'),
-    'theme' => 'table',
-    'variables' => array('header' => styleguide_header(), 'rows' => styleguide_rows()),
+    'content' => theme('table', styleguide_header(), styleguide_rows()),
     'group' => t('Tables'),
   );
   $items['text'] = array(
@@ -59,24 +54,22 @@ function styleguide_styleguide() {
   );
   $items['image-horizontal'] = array(
     'title' => t('Image, horizontal'),
-    'theme' => 'image',
-    'variables' => array('path' => styleguide_image('horizontal'), 'alt' => t('My image'), 'title' => t('My image')),
+    'content' => theme('image', styleguide_image('horizontal'), t('My image'), t('My image')),
     'group' => t('Media'),
   );
   $items['image-vertical'] = array(
     'title' => t('Image, vertical'),
-    'theme' => 'image',
-    'variables' => array('path' => styleguide_image('vertical'), 'alt' => t('My image'), 'title' => t('My image')),
+    'content' => theme('image', styleguide_image('vertical'), t('My image'), t('My image')),
     'group' => t('Media'),
   );
   $items['image-inset-horizontal'] = array(
     'title' => t('Image, horizontal, within text'),
-    'content' => styleguide_paragraph(1) . theme('image', array('path' => styleguide_image('horizontal'), 'alt' => t('My image'), 'title' => t('My image'))) . styleguide_paragraph(2),
+    'content' => styleguide_paragraph(1) . theme('image', styleguide_image('horizontal'), t('My image'), t('My image')) . styleguide_paragraph(2),
     'group' => t('Media'),
   );
   $items['image-inset-vertical'] = array(
     'title' => t('Image, vertical, within text'),
-    'content' => styleguide_paragraph(1) . theme('image', array('path' => styleguide_image('vertical'), 'alt' => t('My image'), 'title' => t('My image'))) . styleguide_paragraph(2),
+    'content' => styleguide_paragraph(1) . theme('image', styleguide_image('vertical'), t('My image'), t('My image')). styleguide_paragraph(2),
     'group' => t('Media'),
   );
   $content = '';
@@ -101,7 +94,7 @@ function styleguide_styleguide() {
   foreach ($messages as $message) {
     $items[$message . '-message'] = array(
       'title' => ucwords($message) . ' message',
-      'content' => '<div class="messages ' . $message . '"><h2 class="element-invisible">Status message</h2>' . styleguide_sentence() . '</div>',
+      'content' => '<div class="messages ' . $message . '">' . styleguide_sentence() . '</div>',
     );
   }
   // Form elements.
@@ -134,6 +127,7 @@ function styleguide_styleguide() {
     'content' => drupal_get_form('styleguide_form', $basic),
     'group' => t('Forms'),
   );
+
   $items['form-submit'] = array(
     'title' => t('Forms, submit'),
     'content' => drupal_get_form('styleguide_form', array('submit')),
@@ -159,11 +153,5 @@ function styleguide_styleguide() {
     'content' => drupal_get_form('styleguide_form', $fieldsets),
     'group' => t('Forms'),
   );
-  $items['form-vertical-tabs'] = array(
-    'title' => t('Forms, vertical tabs'),
-    'content' => drupal_get_form('styleguide_form', $tabs),
-    'group' => t('Forms'),
-  );
-
   return $items;
 }

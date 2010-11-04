@@ -5,8 +5,8 @@
  * Implements hook_menu().
  */
 function styleguide_menu() {
-  $default = variable_get('theme_default', 'bartik');
-  $items['admin/appearance/styleguide'] = array(
+  $default = variable_get('theme_default', 'garland');
+  $items['admin/build/themes/styleguide'] = array(
     'title' => 'Style guide',
     'page callback' => 'styleguide_page',
     'weight' => 40,
@@ -16,7 +16,7 @@ function styleguide_menu() {
   );
   foreach (list_themes() as $theme) {
     $is_default = $theme->name == $default;
-    $items['admin/appearance/styleguide/' . $theme->name] = array(
+    $items['admin/build/themes/styleguide/' . $theme->name] = array(
       'title' => $theme->info['name'],
       'page callback' => 'styleguide_page',
       'page arguments' => array($theme->name),
@@ -24,8 +24,6 @@ function styleguide_menu() {
       'access callback' => 'styleguide_access_check',
       'access arguments' => array($theme),
       'weight' => $is_default ? -10 : 0,
-      'theme callback' => '_styleguide_page_theme',
-      'theme arguments' => array($theme->name),
     );
   }
   return $items;
@@ -41,7 +39,7 @@ function _styleguide_page_theme($theme) {
 /**
  * Implements hook_theme().
  */
-function styleguide_theme($existing, $type, $theme, $path) {
+function styleguide_theme() {
   $themes = array(
     'styleguide_header' => array(
       'variables' => array('theme_info' => array()),
@@ -65,13 +63,8 @@ function styleguide_theme($existing, $type, $theme, $path) {
 /**
  * Implements hook_permission().
  */
-function styleguide_permission() {
-  $permissions = array(
-    'view style guides' => array(
-      'title' => t('View theme style guides'),
-    )
-  );
-  return $permissions;
+function styleguide_perm() {
+  return array('view style guides');
 }
 
 /**
@@ -81,7 +74,7 @@ function styleguide_access_check($theme) {
   if (!user_access('view style guides')) {
     return FALSE;
   }
-  if (drupal_theme_access($theme)) {
+  if (_system_themes_access($theme)) {
     return TRUE;
   }
   return FALSE;
@@ -92,13 +85,16 @@ function styleguide_access_check($theme) {
  */
 function styleguide_page($theme = NULL) {
   drupal_add_css(drupal_get_path('module', 'styleguide') . '/styleguide.css');
-
+  module_load_include('inc', 'styleguide', 'styleguide.styleguide');
   // TODO: notice about the Overlay module?
 
   // Check the theme.
   if (is_null($theme)) {
-    $theme = variable_get('theme_default', 'bartik');
+    $theme = variable_get('theme_default', 'garland');
   }
+
+  global $custom_theme;
+  $custom_theme = $theme;
 
   // Get theme data.
   $themes = list_themes();
@@ -132,14 +128,10 @@ function styleguide_page($theme = NULL) {
   foreach ($groups as $group => $elements) {
     foreach ($elements as $key => $item) {
       $display = '';
-      // Output a standard theme item.
-      if (isset($item['theme'])) {
-        $display = theme($item['theme'], $item['variables']);
-      }
       // Output a standard HTML tag. In Drupal 7, the preference
       // is to pass theme('html_tag') instead. This is kept for API
       // compatibility with Drupal 6.
-      elseif (isset($item['tag']) && isset($item['content'])) {
+      if (isset($item['tag']) && isset($item['content'])) {
         if (empty($item['attributes'])) {
           $display = '<' . $item['tag'] . '>' . $item['content'] . '</' . $item['tag'] . '>';
         }
@@ -148,11 +140,11 @@ function styleguide_page($theme = NULL) {
         }
       }
       // Support a renderable array for content.
-      elseif (isset($item['content']) && is_array($item['content'])) {
+      else if (isset($item['content']) && is_array($item['content'])) {
         $display = drupal_render($item['content']);
       }
       // Just print the provided content.
-      elseif (isset($item['content'])) {
+      else if (isset($item['content'])) {
         $display = $item['content'];
       }
       // Add the content.
@@ -160,23 +152,13 @@ function styleguide_page($theme = NULL) {
       // Prepare the header link.
       $header[$group][] = l($item['title'], $_GET['q'], array('fragment' => $key));
     }
-    $head .= theme('item_list', array('items' => $header[$group], 'title' => $group));
+    $head .= theme('item_list', $header[$group], $group);
   }
   $output = theme('styleguide_header', array('theme_info' => $theme_info));
   $output .= theme('styleguide_links', array('items' => $head));
   $output .= theme('styleguide_content', array('content' => $content));
   // Return the page.
   return $output;
-}
-
-/**
- * Implements hook_hook_info().
- */
-function styleguide_hook_info() {
-  $hooks['styleguide'] = array(
-    'group' =>  'styleguide',
-  );
-  return $hooks;
 }
 
 /**
@@ -334,25 +316,16 @@ function styleguide_image($image = 'vertical', $type = 'jpg') {
 }
 
 /**
- * Implements hook_system_theme_page_alter().
+ * Implements hook_form_FORM_ID_alter().
  */
-function styleguide_system_themes_page_alter(&$theme_groups) {
+function styleguide_form_system_themes_form_alter(&$form, $form_state) {
   if (!user_access('view style guides')) {
     return;
   }
-  foreach ($theme_groups as $group => $members) {
-    if (empty($group)) {
-      continue;
-    }
-    foreach ($members as $key => $theme) {
-      if (!styleguide_access_check($theme)) {
-        continue;
-      }
-      $theme_groups[$group][$key]->operations[] = array(
-        'title' => t('Style guide'),
-        'href' => 'admin/appearance/styleguide/' . $theme->name,
-        'attributes' => array('title' => t('Style guide for @theme', array('@theme' => $theme->info['name']))),
-      );
+  foreach (list_themes() as $theme) {
+    if (styleguide_access_check($theme) && isset($form[$theme->name]['info']['#value']['description'])) {
+      $operation = l(t('View styleguide'), 'admin/build/themes/styleguide/'. $theme->name);
+      $form[$theme->name]['info']['#value']['description'] .= '<div class="styleguide-form-link">' . $operation . '</div>';
     }
   }
 }
@@ -370,7 +343,7 @@ function styleguide_sentence() {
 /**
  * Sample form, showing all elements.
  */
-function styleguide_form($form, &$form_state, $form_keys = array()) {
+function styleguide_form(&$form_state, $form_keys = array()) {
   $form = array();
   $options = array();
   $list = styleguide_list();
@@ -415,20 +388,6 @@ function styleguide_form($form, &$form_state, $form_keys = array()) {
     '#description' => styleguide_sentence(),
     '#autocomplete_path' => 'user/autocomplete',
   );
-  $form['textfield-machine'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Textfield, with machine name'),
-    '#default_value' => styleguide_word() . ' ' . styleguide_word() . ' ' . styleguide_word(),
-    '#description' => styleguide_sentence(),
-  );
-  $form['machine_name'] = array(
-    '#type' => 'machine_name',
-    '#title' => t('Machine name'),
-    '#machine_name' => array(
-      'source' => array('textfield-machine'),
-    ),
-    '#description' => styleguide_sentence(),
-  );
   $form['textarea'] = array(
     '#type' => 'textarea',
     '#title' => t('Textarea'),
@@ -443,11 +402,6 @@ function styleguide_form($form, &$form_state, $form_keys = array()) {
   $form['file'] = array(
     '#type' => 'file',
     '#title' => t('File'),
-    '#description' => styleguide_sentence(),
-  );
-  $form['managed_file'] = array(
-    '#type' => 'managed_file',
-    '#title' => t('Managed file'),
     '#description' => styleguide_sentence(),
   );
   $form['password'] = array(
@@ -495,20 +449,8 @@ function styleguide_form($form, &$form_state, $form_keys = array()) {
       }
     }
   }
-  $form['vertical_tabs'] = array(
-    '#type' => 'vertical_tabs',
-  );
-  foreach ($fieldsets as $fieldset) {
-    $form['vertical_tabs'][$fieldset] = $form[$fieldset];
-  }
   $form['markup'] = array(
-    '#markup' => t('<p><em>Markup</em>: Note that markup does not allow titles or descriptions. Use "item" for those options.</p>') . styleguide_paragraph(1),
-  );
-  $form['item'] = array(
-    '#type' => 'item',
-    '#title' => t('Item'),
-    '#markup' => styleguide_paragraph(1),
-    '#description' => styleguide_sentence(),
+    '#value' => t('<p><em>Markup</em>: Note that markup does not allow titles or descriptions. Use "item" for those options.</p>') . styleguide_paragraph(1),
   );
   $form['image_button'] = array(
     '#type' => 'image_button',

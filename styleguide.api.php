@@ -13,13 +13,7 @@
  * Options:
  *   -- 'title' (required). A string indicating the element name. 
  *   -- 'description' (optional). A short description of the item. 
- *   -- 'theme' (optional). A string indicating the theme function to invoke.
- *    If used, you must return a 'variables' array element. Otherwise, you
- *    must return a 'content' string.
- *   -- 'variables' (optional). An array of named vairables to pass to the
- *    theme function. This structure is designed to let you test your theme
- *    functions for syntax.
- *   -- 'content' (optional). A string or renderable array of content to
+ *   -- 'content' (required). A string or renderable array of content to
  *    present. May be used in conjunction with a 'tag' element, or used instead
  *    of a theme callback.
  *   -- 'tag' (optional). A string indicating a valid HTML tag (wihout <>).
@@ -36,8 +30,7 @@
 function hook_styleguide() {
   $items['ul'] = array(
     'title' => t('Unordered list'),
-    'theme' => 'item_list',
-    'variables' => array('items' => styleguide_list(), 'type' => 'ul'),
+    'content' => theme('item_list', styleguide_list()),
     'group' => t('Common'),
   );
   $items['text'] => array(
