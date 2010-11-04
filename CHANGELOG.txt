@@ -2,6 +2,10 @@
 
 CHANGELOG file for Style Guide.
 
+04-NOV-2010
+-- Created 7.x.1.0
+-- Branched DRUPAL-6--1 for the backport.
+
 23-OCT-2010
 -- Uses proper theming for page display.
 -- Adds styleguide.theme.inc.
