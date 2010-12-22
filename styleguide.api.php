@@ -33,7 +33,7 @@ function hook_styleguide() {
     'content' => theme('item_list', styleguide_list()),
     'group' => t('Common'),
   );
-  $items['text'] => array(
+  $items['text'] = array(
     'title' => t('Text block'),
     'content' => styleguide_paragraph(3),
     'group' => t('Text'),
